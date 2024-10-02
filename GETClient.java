@@ -1,7 +1,10 @@
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 public class GETClient {
+
+    private static int lamportClock = 0;
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -29,38 +32,77 @@ public class GETClient {
                 path += "?id=" + stationId;
             }
 
-            // Send the GET request
+            // **Lamport Clock Increment**
+            lamportClock++;
+
+            // Send the GET request with Lamport clock
             out.println("GET " + path + " HTTP/1.1");
             out.println("Host: " + url.getHost());
+            out.println("Lamport-Clock: " + lamportClock);
             out.println("Connection: close");
             out.println();
 
-            // Read and print the status line
+            // Read the status line
             String statusLine = in.readLine();
             if (statusLine == null) {
                 System.out.println("No response from server.");
                 return;
             }
-            System.out.println(statusLine);
 
-            // Read and print the headers
+            // Read the headers and store them in a map
+            Map<String, String> headers = new HashMap<>();
             String headerLine;
             while (!(headerLine = in.readLine()).equals("")) {
-                System.out.println(headerLine);
+                String[] headerParts = headerLine.split(": ");
+                if (headerParts.length == 2) {
+                    headers.put(headerParts[0], headerParts[1]);
+                }
             }
-            System.out.println();
 
-            // Read and print the response body
+            // **Update Lamport Clock based on server's Lamport clock**
+            int serverLamportClock = Integer.parseInt(headers.getOrDefault("Lamport-Clock", "0"));
+            lamportClock = Math.max(lamportClock, serverLamportClock) + 1;
+
+            // Read the response body
+            StringBuilder responseBody = new StringBuilder();
             String line;
             while ((line = in.readLine()) != null) {
-                System.out.println(line);
+                responseBody.append(line);
             }
+
+            // **Parse and display the JSON response**
+            parseAndDisplayJson(responseBody.toString());
 
             // Close the socket
             socket.close();
 
         } catch (Exception e) {
             System.out.println("Client exception: " + e.getMessage());
+        }
+    }
+
+    // **Method to parse and display JSON response**
+    private static void parseAndDisplayJson(String json) {
+        // Trim and clean the JSON string
+        json = json.trim();
+        if (json.startsWith("[")) {
+            json = json.substring(1, json.length() - 1);
+        }
+
+        // Split the JSON array into individual objects
+        String[] objects = json.split("\\},\\{");
+        for (String obj : objects) {
+            obj = obj.replaceAll("\\{|\\}", "");
+            String[] pairs = obj.split(",");
+            for (String pair : pairs) {
+                String[] kv = pair.split(":", 2);
+                if (kv.length == 2) {
+                    String key = kv[0].trim().replaceAll("\"", "");
+                    String value = kv[1].trim().replaceAll("\"", "");
+                    System.out.println(key + ": " + value);
+                }
+            }
+            System.out.println("-------------------------");
         }
     }
 }

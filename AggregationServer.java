@@ -2,8 +2,12 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AggregationServer {
+
+    // Lamport clock
+    private AtomicInteger lamportClock = new AtomicInteger(0);
 
     // Weather data storage
     private ConcurrentHashMap<String, WeatherStationData> weatherDataMap = new ConcurrentHashMap<>();
@@ -25,6 +29,9 @@ public class AggregationServer {
     }
 
     public void startServer() {
+        // Start data expiration thread
+        startDataExpirationTask();
+
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Aggregation Server is listening on port " + port);
 
@@ -37,9 +44,31 @@ public class AggregationServer {
         }
     }
 
+    // Method to update Lamport clock
+    public synchronized int updateLamportClock(int receivedClock) {
+        int currentClock = lamportClock.get();
+        lamportClock.set(Math.max(currentClock, receivedClock) + 1);
+        return lamportClock.get();
+    }
+
+    // Method to get current Lamport clock
+    public int getLamportClock() {
+        return lamportClock.get();
+    }
+
     // Methods to access weather data map
     public ConcurrentHashMap<String, WeatherStationData> getWeatherDataMap() {
         return weatherDataMap;
+    }
+
+    // Start data expiration task
+    private void startDataExpirationTask() {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(() -> {
+            long currentTime = System.currentTimeMillis();
+            weatherDataMap.values().removeIf(data ->
+                    currentTime - data.getLastUpdateTime() > 30000); // 30 seconds
+        }, 30, 30, TimeUnit.SECONDS);
     }
 }
 
@@ -73,13 +102,17 @@ class ServerHandler extends Thread {
                 }
             }
 
+            // Get Lamport clock from headers
+            int clientLamportClock = Integer.parseInt(headers.getOrDefault("Lamport-Clock", "0"));
+            int serverLamportClock = server.updateLamportClock(clientLamportClock);
+
             // Handle request
             if (requestLine.startsWith("PUT")) {
-                handlePutRequest(in, headers, out);
+                handlePutRequest(in, headers, out, serverLamportClock);
             } else if (requestLine.startsWith("GET")) {
-                handleGetRequest(out);
+                handleGetRequest(out, serverLamportClock);
             } else {
-                sendResponse(out, "HTTP/1.1 400 Bad Request", "Invalid request method.");
+                sendResponse(out, "HTTP/1.1 400 Bad Request", "Invalid request method.", serverLamportClock);
             }
 
         } catch (IOException e) {
@@ -88,7 +121,7 @@ class ServerHandler extends Thread {
     }
 
     private void handlePutRequest(BufferedReader in, Map<String, String> headers,
-                                  PrintWriter out) throws IOException {
+                                  PrintWriter out, int serverLamportClock) throws IOException {
         int contentLength = Integer.parseInt(headers.getOrDefault("Content-Length", "0"));
 
         // Read JSON data from request body
@@ -107,15 +140,17 @@ class ServerHandler extends Thread {
 
             synchronized (stationData) {
                 stationData.updateData(weatherData);
+                stationData.setLamportClock(serverLamportClock);
+                stationData.setLastUpdateTime(System.currentTimeMillis());
             }
 
-            sendResponse(out, "HTTP/1.1 200 OK", "Data updated successfully.");
+            sendResponse(out, "HTTP/1.1 200 OK", "Data updated successfully.", serverLamportClock);
         } else {
-            sendResponse(out, "HTTP/1.1 400 Bad Request", "Station ID is missing.");
+            sendResponse(out, "HTTP/1.1 400 Bad Request", "Station ID is missing.", serverLamportClock);
         }
     }
 
-    private void handleGetRequest(PrintWriter out) {
+    private void handleGetRequest(PrintWriter out, int serverLamportClock) {
         // Aggregate weather data
         StringBuilder responseBody = new StringBuilder();
         responseBody.append("[");
@@ -133,7 +168,7 @@ class ServerHandler extends Thread {
         responseBody.append("]");
 
         // Send response
-        sendResponse(out, "HTTP/1.1 200 OK", responseBody.toString(), "application/json");
+        sendResponse(out, "HTTP/1.1 200 OK", responseBody.toString(), serverLamportClock, "application/json");
     }
 
     private Map<String, String> parseJson(String json) {
@@ -154,13 +189,14 @@ class ServerHandler extends Thread {
         return dataMap;
     }
 
-    private void sendResponse(PrintWriter out, String statusLine, String body) {
-        sendResponse(out, statusLine, body, "text/plain");
+    private void sendResponse(PrintWriter out, String statusLine, String body, int lamportClock) {
+        sendResponse(out, statusLine, body, lamportClock, "text/plain");
     }
 
-    private void sendResponse(PrintWriter out, String statusLine, String body, String contentType) {
+    private void sendResponse(PrintWriter out, String statusLine, String body, int lamportClock, String contentType) {
         out.println(statusLine);
         out.println("Content-Type: " + contentType);
+        out.println("Lamport-Clock: " + lamportClock);
         out.println("Content-Length: " + body.getBytes().length);
         out.println();
         out.println(body);
@@ -170,9 +206,16 @@ class ServerHandler extends Thread {
 // Class to hold weather data for a station
 class WeatherStationData {
     private Map<String, String> data = new HashMap<>();
+    private int lamportClock;
+    private long lastUpdateTime;
+    private LinkedList<Map<String, String>> recentUpdates = new LinkedList<>();
 
     public synchronized void updateData(Map<String, String> newData) {
         data.putAll(newData);
+        recentUpdates.add(new HashMap<>(newData));
+        if (recentUpdates.size() > 20) {
+            recentUpdates.removeFirst();
+        }
     }
 
     public synchronized String toJson() {
@@ -188,5 +231,21 @@ class WeatherStationData {
         }
         json.append("}");
         return json.toString();
+    }
+
+    public int getLamportClock() {
+        return lamportClock;
+    }
+
+    public void setLamportClock(int lamportClock) {
+        this.lamportClock = lamportClock;
+    }
+
+    public long getLastUpdateTime() {
+        return lastUpdateTime;
+    }
+
+    public void setLastUpdateTime(long lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
     }
 }

@@ -4,6 +4,8 @@ import java.util.*;
 
 public class ContentServer {
 
+    private static int lamportClock = 0;
+
     public static void main(String[] args) {
         if (args.length < 2) {
             System.out.println("Usage: java ContentServer <server-url> <file-path>");
@@ -23,7 +25,7 @@ public class ContentServer {
 
             String jsonData = convertToJson(weatherData);
 
-            // Send PUT request
+            // Send PUT request with Lamport clock synchronization
             sendPutRequest(serverUrl, jsonData);
 
         } catch (Exception e) {
@@ -32,6 +34,7 @@ public class ContentServer {
     }
 
     private static Map<String, String> readDataFromFile(String filePath) {
+        // (Same as in Part 1)
         Map<String, String> dataMap = new HashMap<>();
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -47,8 +50,9 @@ public class ContentServer {
             return null;
         }
     }
-    // code to covert the data read from  file to Json format
+
     private static String convertToJson(Map<String, String> dataMap) {
+        // (Same as in Part 1)
         StringBuilder json = new StringBuilder();
         json.append("{");
         Iterator<Map.Entry<String, String>> iterator = dataMap.entrySet().iterator();
@@ -71,11 +75,15 @@ public class ContentServer {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            // Send PUT request
+            // Increment Lamport clock before sending the request
+            lamportClock++;
+
+            // Send PUT request with Lamport clock header
             out.println("PUT " + url.getPath() + " HTTP/1.1");
             out.println("Host: " + url.getHost());
             out.println("Content-Type: application/json");
             out.println("Content-Length: " + jsonData.getBytes().length);
+            out.println("Lamport-Clock: " + lamportClock);
             out.println("Connection: close");
             out.println();
             out.println(jsonData);
@@ -96,6 +104,10 @@ public class ContentServer {
                     headers.put(headerParts[0], headerParts[1]);
                 }
             }
+
+            // Update Lamport clock based on server's Lamport clock
+            int serverLamportClock = Integer.parseInt(headers.getOrDefault("Lamport-Clock", "0"));
+            lamportClock = Math.max(lamportClock, serverLamportClock) + 1;
 
             // Read response body
             StringBuilder responseBody = new StringBuilder();
