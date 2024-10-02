@@ -6,7 +6,7 @@ Summary of ContentServer
 
 The ContentServer is a Java application designed to read weather data from a file, convert it into JSON format, and send it to a specified server using an HTTP PUT request. The application incorporates Lamport clock synchronization to handle event ordering in distributed systems, ensuring consistency across multiple processes.
 
-Key Functionalities:
+## Key Functionalities:
 
 Reading Data from File:
 
@@ -69,7 +69,7 @@ This mechanism ensures that the server only retains fresh and relevant weather i
 
 The GETClient program is a Java application that functions as a simple HTTP client. It connects to a specified server, sends an HTTP GET request (optionally with a query parameter), and processes the server's response. The program also implements Lamport clock synchronization to manage event ordering in distributed systems and includes basic JSON parsing to display the server's response in a readable format.
 
-Key Features:
+## Key Features:
 
 Command-Line Arguments:
 
