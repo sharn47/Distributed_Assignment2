@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><testrun name="AggregationServerTest" project="app" tests="1" started="1" failures="1" errors="0" ignored="0">
+  <testsuite name="com.weather.app.AggregationServerTest" time="0.001" displayname="AggregationServerTest" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]">
+    <testcase name="testPutAndGetRequest" classname="com.weather.app.AggregationServerTest" time="0.001" displayname="testPutAndGetRequest()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testPutAndGetRequest()]">
+      <failure>
+        <expected>true</expected>
+        <actual>false</actual>
+        org.opentest4j.AssertionFailedError: expected: &lt;true&gt; but was: &lt;false&gt;&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)&#13;
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)&#13;
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)&#13;
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)&#13;
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)&#13;
+	at com.weather.app.AggregationServerTest.testPutAndGetRequest(AggregationServerTest.java:94)&#13;
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+&#13;
+
+      </failure>
+    </testcase>
+  </testsuite>
+</testrun>

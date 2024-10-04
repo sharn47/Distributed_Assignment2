@@ -1,0 +1,51 @@
+package com.weather.app;
+
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.Map;
+import java.io.*;
+
+public class ContentServerTest {
+
+    @Test
+    public void testLamportClockInitialization() {
+        assertEquals(0, ContentServer.getLamportClockValue(), "Lamport clock should start at 0");
+    }
+
+    @Test
+    public void testLamportClockUpdate() {
+        ContentServer.updateLamportClock(5);
+        assertEquals(6, ContentServer.getLamportClockValue(), "Lamport clock should be updated correctly");
+    }
+
+    @Test
+    public void testReadDataFromFile() throws IOException {
+        // Create a temporary file
+        File tempFile = File.createTempFile("weather", ".txt");
+        try (PrintWriter writer = new PrintWriter(tempFile)) {
+            writer.println("id:IDS60901");
+            writer.println("name:Adelaide");
+            writer.println("state:SA");
+        }
+
+        Map<String, String> data = ContentServer.readDataFromFile(tempFile.getAbsolutePath());
+        assertNotNull(data, "Data map should not be null");
+        assertEquals("IDS60901", data.get("id"), "ID should match");
+        assertEquals("Adelaide", data.get("name"), "Name should match");
+        assertEquals("SA", data.get("state"), "State should match");
+
+        // Delete the temporary file
+        tempFile.delete();
+    }
+
+    @Test
+    public void testConvertToJson() {
+        Map<String, String> dataMap = Map.of("id", "IDS60901", "name", "Adelaide", "state", "SA");
+        String json = ContentServer.convertToJson(dataMap);
+        String expectedJson = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"state\":\"SA\"}";
+        assertEquals(expectedJson, json, "JSON output should match expected");
+    }
+
+    // Additional tests for sendPutRequest would require refactoring to allow mocking network interactions
+}
+

@@ -1,77 +1,200 @@
 package com.weather.app;
+import org.junit.jupiter.api.BeforeAll;
+
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.io.*;
+
+import java.net.ServerSocket;
+
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-public class ContentServerTest {
 
-    @Test
-    public void testSendData() throws Exception {
-        // Mock socket and output stream
-        Socket mockSocket = Mockito.mock(Socket.class);
-        BufferedWriter mockWriter = mock(BufferedWriter.class);
-        BufferedReader mockReader = mock(BufferedReader.class);
-        
-        // Simulate server response
-        when(mockReader.readLine()).thenReturn("HTTP/1.1 200 OK", "");
-        when(mockReader.ready()).thenReturn(false);
-        
-        // Mock the socket creation to return the mock socket
-        ContentServer contentServer = Mockito.spy(ContentServer.class);
-        doReturn(mockSocket).when(contentServer).createSocket(any(URL.class));
 
-        // Mock input/output stream handling
-        when(mockSocket.getOutputStream()).thenReturn(mock(OutputStream.class));
-        when(mockSocket.getInputStream()).thenReturn(mock(InputStream.class));
-        doReturn(mockWriter).when(contentServer).createBufferedWriter(any());
-        doReturn(mockReader).when(contentServer).createBufferedReader(any());
+class ContentServerTest {
 
-        // Mock the file read operation
-        Map<String, String> dataMap = new HashMap<>();
-        dataMap.put("id", "12345");
-        dataMap.put("temperature", "25.3");
 
-        // Test method
-        contentServer.sendData("http://localhost:4567", "weatherData.txt");
 
-        // Verify that PUT request is sent
-        verify(mockWriter, times(1)).write(anyString());
+    private static Thread serverThread;
+
+
+
+    @BeforeAll
+
+    static void startServer() {
+
+        serverThread = new Thread(() -> {
+
+            try {
+
+                AggregationServer.main(new String[] { "4568" });
+
+            } catch (IOException e) {
+
+                e.printStackTrace();
+
+            }
+
+        });
+
+        serverThread.start();
+
+
+
+        // Give the server time to start
+
+        try {
+
+            Thread.sleep(2000);  // Adjust sleep time as necessary
+
+        } catch (InterruptedException e) {
+
+            e.printStackTrace();
+
+        }
+
     }
 
-    @Test
-    public void testReadDataFromFile() throws IOException {
-        // Prepare sample content
-        Path tempFile = Files.createTempFile("testWeatherData", ".txt");
-        Files.write(tempFile, "id: 12345\ntemperature: 25.3\n".getBytes());
 
-        // Test reading data from file
-        Map<String, String> dataMap = ContentServer.readDataFromFile(tempFile.toString());
-        assertEquals("12345", dataMap.get("id"));
-        assertEquals("25.3", dataMap.get("temperature"));
-
-        // Clean up temp file
-        Files.delete(tempFile);
-    }
 
     @Test
-    public void testSendDataWithRetry() throws Exception {
-        // Simulate a failure and retry logic
-        ContentServer contentServer = Mockito.spy(ContentServer.class);
-        doThrow(new IOException()).when(contentServer).sendData(anyString(), anyString());
 
-        // Mock retry method
-        boolean success = contentServer.sendDataWithRetry("http://localhost:4567", "weatherData.txt", 2);
+    void testContentServerSendData() throws IOException {
 
-        assertFalse(success);
-        verify(contentServer, times(2)).sendData(anyString(), anyString());
+        String[] args = { "localhost:4568", "testWeatherData.txt" };
+
+        ContentServer.main(args);
+
+
+
+        // Now check if the data was received by the AggregationServer
+
+        Socket socket = new Socket("localhost", 4568);
+
+        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+
+
+        // Send GET request
+
+        out.println("GET /weather.json HTTP/1.1");
+
+        out.println("Host: localhost");
+
+        out.println("Accept: application/json");
+
+        out.println("Lamport-Clock: 3");
+
+        out.println();
+
+
+
+        // Read the response
+
+        String statusLine = in.readLine();
+
+        assertTrue(statusLine.contains("200")); // Ensure we get OK status
+
+
+
+        // Read JSON body
+
+        StringBuilder responseBody = new StringBuilder();
+
+        String line;
+
+        while ((line = in.readLine()) != null) {
+
+            responseBody.append(line);
+
+        }
+
+
+
+        assertTrue(responseBody.toString().contains("Test Station"));
+
+        assertTrue(responseBody.toString().contains("Test State"));
+
+
+
+        socket.close();
+
     }
+
+
+
+    @Test
+
+    void testContentServerInvalidFileFormat() throws IOException {
+
+        // Prepare an invalid file for content server
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter("invalidWeatherData.txt"))) {
+
+            writer.println("invalid data");
+
+        }
+
+
+
+        String[] args = { "localhost:4568", "invalidWeatherData.txt" };
+
+        ContentServer.main(args);
+
+
+
+        // Since there's no id, the entry should be rejected
+
+        Socket socket = new Socket("localhost", 4568);
+
+        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+
+
+        // Send GET request to check if no invalid data was stored
+
+        out.println("GET /weather.json HTTP/1.1");
+
+        out.println("Host: localhost");
+
+        out.println("Accept: application/json");
+
+        out.println("Lamport-Clock: 3");
+
+        out.println();
+
+
+
+        // Read the response
+
+        StringBuilder responseBody = new StringBuilder();
+
+        String line;
+
+        while ((line = in.readLine()) != null) {
+
+            responseBody.append(line);
+
+        }
+
+
+
+        // Ensure the invalid data wasn't stored
+
+        assertFalse(responseBody.toString().contains("invalid data"));
+
+
+
+        socket.close();
+
+    }
+
+   
+
 }

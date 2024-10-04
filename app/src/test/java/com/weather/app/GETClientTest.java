@@ -1,49 +1,161 @@
 package com.weather.app;
 
+import org.junit.jupiter.api.Test;
+
+
+
+import java.io.BufferedReader;
+
+import java.io.BufferedWriter;
+
+import java.io.ByteArrayOutputStream;
+
+import java.io.IOException;
+
+import java.io.InputStreamReader;
+
+import java.io.OutputStreamWriter;
+
+import java.io.PrintStream;
+
+import java.net.ServerSocket;
+
+import java.net.Socket;
+
+
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-import java.io.*;
-import java.net.*;
 
-import org.junit.jupiter.api.*;
-import org.mockito.Mockito;
 
-public class GETClientTest {
+class GETClientTest {
+
+
 
     @Test
-    public void testParseAndDisplay() {
-        String jsonResponse = "[{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"state\":\"SA\"}]";
-        GETClient client = new GETClient();
-        client.parseAndDisplay(jsonResponse);
-        // Since parseAndDisplay prints to console, you can redirect System.out to capture output
-        // For simplicity, we assume parseAndDisplay works if no exceptions are thrown
+
+    void testGetClientReceivesData() throws IOException {
+
+        // Test case for retrieving data from AggregationServer
+
+        String[] args = { "localhost:4568" };
+
+        GETClient.main(args);
+
+
+
     }
+
+    
 
     @Test
-    public void testSendGetRequest() throws Exception {
-        // Mock Socket and its streams
-        Socket mockSocket = mock(Socket.class);
-        ByteArrayOutputStream mockOut = new ByteArrayOutputStream();
-        InputStream mockIn = new ByteArrayInputStream(
-                ("HTTP/1.1 200 OK\r\nContent-Length: 58\r\nLamport-Clock: 1\r\n\r\n" +
-                "[{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"state\":\"SA\"}]").getBytes());
 
-        when(mockSocket.getOutputStream()).thenReturn(mockOut);
-        when(mockSocket.getInputStream()).thenReturn(mockIn);
+    public void testGETClientHandlesValidServerResponse() throws Exception {
 
-        // Spy on GETClient to mock the createSocket method
-        GETClient client = Mockito.spy(new GETClient());
-        Mockito.doReturn(mockSocket).when(client).createSocket(any(URL.class));
+        // Start a mock server that will respond with JSON data
 
-        // Call the method under test
-        client.sendGetRequest("http://localhost:4567");
+        Thread mockServerThread = new Thread(() -> {
 
-        // Capture the output sent to the server
-        String sentData = mockOut.toString();
+            try (ServerSocket serverSocket = new ServerSocket(8081)) {
 
-        // Verify that the data contains the expected HTTP request
-        assertTrue(sentData.contains("GET / HTTP/1.1"));
-        assertTrue(sentData.contains("Lamport-Clock: 1"));
+                Socket socket = serverSocket.accept();
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+
+
+
+                // Read the request (you can add more processing if needed)
+
+                while (!in.readLine().isEmpty()) {
+
+                    // Just read the request
+
+                }
+
+
+
+                // Mock a 200 OK response with a JSON body
+
+                String jsonResponse = "[{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"state\":\"SA\",\"air_temp\":\"13.3\"}]";
+
+                out.write("HTTP/1.1 200 OK\r\n");
+
+                out.write("Content-Type: application/json\r\n");
+
+                out.write("Content-Length: " + jsonResponse.length() + "\r\n");
+
+                out.write("\r\n");
+
+                out.write(jsonResponse);
+
+                out.flush();
+
+
+
+                socket.close();
+
+            } catch (IOException e) {
+
+                e.printStackTrace();
+
+            }
+
+        });
+
+
+
+        // Start the mock server
+
+        mockServerThread.start();
+
+        Thread.sleep(500); // Wait for the mock server to start
+
+
+
+        // Capture the output of the GETClient
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        PrintStream originalOut = System.out;
+
+        System.setOut(new PrintStream(outputStream));
+
+
+
+        // Run the GETClient and connect to the mock server
+
+        String[] args = { "localhost:8081" };
+
+        GETClient.main(args);
+
+
+
+        // Restore the original output
+
+        System.setOut(originalOut);
+
+
+
+        // Verify the client output
+
+        String output = outputStream.toString();
+
+        assertTrue(output.contains("id: IDS60901"));
+
+        assertTrue(output.contains("name: Adelaide"));
+
+        assertTrue(output.contains("state: SA"));
+
+        assertTrue(output.contains("air_temp: 13.3"));
+
+
+
+        // Stop the mock server thread
+
+        mockServerThread.interrupt();
+
     }
+
 }

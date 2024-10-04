@@ -1,0 +1,13 @@
+INDEX VERSION 1.134+D:\java\Distriuted systems\asignment\.metadata\.plugins\org.eclipse.jdt.core
+2140778013.index
+2545854023.index
+1865797976.index
+1291071419.index
+2528167643.index
+2385422461.index
+1380164203.index
+4142678250.index
+1955415315.index
+1799000600.index
+404388260.index
+3571755863.index

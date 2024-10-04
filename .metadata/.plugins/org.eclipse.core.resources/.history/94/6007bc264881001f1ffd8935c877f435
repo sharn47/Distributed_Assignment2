@@ -1,0 +1,48 @@
+package com.weather.app;
+
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+import java.io.*;
+import java.net.*;
+
+public class GETClientTest {
+
+    @Test
+    public void testLamportClockInitialization() {
+        assertEquals(0, GETClient.getLamportClockValue(), "Lamport clock should start at 0");
+    }
+
+    @Test
+    public void testLamportClockUpdate() {
+        GETClient.updateLamportClock(5);
+        assertEquals(6, GETClient.getLamportClockValue(), "Lamport clock should be updated correctly");
+    }
+
+    @Test
+    public void testParseAndDisplayJson() {
+        String json = "[{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"state\":\"SA\"}]";
+        // Capture the output
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outContent));
+        
+        GETClient.parseAndDisplayJson(json);
+        
+        String expectedOutput = "id: IDS60901\nname: Adelaide\nstate: SA\n-------------------------\n";
+        assertEquals(expectedOutput, outContent.toString(), "Parsed output should match expected");
+    }
+
+    @Test
+    public void testMainMethodWithInvalidArguments() {
+        // Redirect stderr
+        ByteArrayOutputStream errContent = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(errContent));
+        
+        GETClient.main(new String[]{});
+        
+        String expectedError = "Usage: java GETClient <server-url> [station-id]\n";
+        assertEquals(expectedError, errContent.toString(), "Should prompt usage when no arguments are provided");
+    }
+
+    // Additional tests would require refactoring GETClient to allow dependency injection or mocking
+}
+

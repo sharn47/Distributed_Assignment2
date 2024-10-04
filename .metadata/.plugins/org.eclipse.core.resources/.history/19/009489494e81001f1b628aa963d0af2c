@@ -1,0 +1,157 @@
+package com.weather.app;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import java.io.*;
+import java.net.*;
+import java.util.concurrent.*;
+
+public class AggregationServerTest {
+
+    private static Thread serverThread;
+    private static final int SERVER_PORT = 8080;
+    private static final String SERVER_HOST = "localhost";
+    private static LamportClock lamportClock = new LamportClock();
+
+    @BeforeAll
+    public static void startServer() throws Exception {
+        serverThread = new Thread(() -> {
+            try {
+                AggregationServer.main(null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        serverThread.start();
+        // Wait for the server to start
+        Thread.sleep(1000);
+    }
+
+    @AfterAll
+    public static void stopServer() throws Exception {
+        serverThread.interrupt();
+        serverThread.join();
+    }
+
+    @Test
+    public void testPutRequest() throws Exception {
+        lamportClock.tick();
+        String jsonData = "{\"id\":\"testStation\",\"temp\":\"20\"}";
+
+        Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+        BufferedWriter out = new BufferedWriter(
+                new OutputStreamWriter(socket.getOutputStream()));
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(socket.getInputStream()));
+
+        // Send PUT request
+        out.write("PUT /weather HTTP/1.1\r\n");
+        out.write("Host: " + SERVER_HOST + "\r\n");
+        out.write("Content-Type: application/json\r\n");
+        out.write("Content-Length: " + jsonData.length() + "\r\n");
+        out.write("Lamport-Time: " + lamportClock.getTime() + "\r\n");
+        out.write("\r\n");
+        out.write(jsonData);
+        out.flush();
+
+        // Read response
+        String statusLine = in.readLine();
+        assertEquals("HTTP/1.1 200 OK", statusLine);
+
+        // Read headers
+        String line;
+        while (!(line = in.readLine()).equals("")) {
+            // Read until an empty line (end of headers)
+        }
+
+        // Read body
+        // Assuming the server sends a response body
+        socket.close();
+    }
+
+    @Test
+    public void testGetRequest() throws Exception {
+        lamportClock.tick();
+
+        Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+        BufferedWriter out = new BufferedWriter(
+                new OutputStreamWriter(socket.getOutputStream()));
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(socket.getInputStream()));
+
+        // Send GET request
+        out.write("GET /weather HTTP/1.1\r\n");
+        out.write("Host: " + SERVER_HOST + "\r\n");
+        out.write("Lamport-Time: " + lamportClock.getTime() + "\r\n");
+        out.write("\r\n");
+        out.flush();
+
+        // Read response
+        String statusLine = in.readLine();
+        assertEquals("HTTP/1.1 200 OK", statusLine);
+
+        // Read headers
+        String line;
+        int contentLength = 0;
+        while (!(line = in.readLine()).equals("")) {
+            if (line.startsWith("Content-Length: ")) {
+                contentLength = Integer.parseInt(line.substring(16));
+            }
+        }
+
+        // Read body
+        char[] bodyChars = new char[contentLength];
+        in.read(bodyChars);
+        String body = new String(bodyChars);
+
+        // Assert that body contains expected data
+        assertTrue(body.contains("\"id\":\"testStation\""));
+        assertTrue(body.contains("\"temp\":\"20\""));
+
+        socket.close();
+    }
+
+    @Test
+    public void testDataExpiry() throws Exception {
+        // Wait for data to expire
+        Thread.sleep(35000); // Wait 35 seconds
+
+        lamportClock.tick();
+
+        Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+        BufferedWriter out = new BufferedWriter(
+                new OutputStreamWriter(socket.getOutputStream()));
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(socket.getInputStream()));
+
+        // Send GET request
+        out.write("GET /weather HTTP/1.1\r\n");
+        out.write("Host: " + SERVER_HOST + "\r\n");
+        out.write("Lamport-Time: " + lamportClock.getTime() + "\r\n");
+        out.write("\r\n");
+        out.flush();
+
+        // Read response
+        String statusLine = in.readLine();
+        assertEquals("HTTP/1.1 200 OK", statusLine);
+
+        // Read headers
+        String line;
+        int contentLength = 0;
+        while (!(line = in.readLine()).equals("")) {
+            if (line.startsWith("Content-Length: ")) {
+                contentLength = Integer.parseInt(line.substring(16));
+            }
+        }
+
+        // Read body
+        char[] bodyChars = new char[contentLength];
+        in.read(bodyChars);
+        String body = new String(bodyChars);
+
+        // Assert that the data has been expired and is no longer present
+        assertFalse(body.contains("\"id\":\"testStation\""));
+        assertFalse(body.contains("\"temp\":\"20\""));
+
+        socket.close();
+    }
+}

@@ -1,0 +1,100 @@
+package com.weather.app;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class ContentServer {
+    private static LamportClock lamportClock = new LamportClock();
+
+    public static void main(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Usage: java ContentServer <server_url> <file_path>");
+            return;
+        }
+
+        String serverUrl = args[0];
+        String filePath = args[1];
+
+        try {
+            Map<String, String> dataMap = readDataFromFile(filePath);
+            String jsonData = mapToJson(dataMap);
+
+            lamportClock.tick();
+
+            URL url = new URL(serverUrl);
+            Socket socket = new Socket(url.getHost(), url.getPort());
+
+            BufferedWriter out = new BufferedWriter(
+                    new OutputStreamWriter(socket.getOutputStream()));
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream()));
+
+            // Send PUT request
+            out.write("PUT /weather HTTP/1.1\r\n");
+            out.write("Host: " + url.getHost() + "\r\n");
+            out.write("Content-Type: application/json\r\n");
+            out.write("Content-Length: " + jsonData.length() + "\r\n");
+            out.write("Lamport-Time: " + lamportClock.getTime() + "\r\n");
+            out.write("\r\n");
+            out.write(jsonData);
+            out.flush();
+
+            // Read response status line
+            String statusLine = in.readLine();
+            if (statusLine == null) return;
+
+            // Read headers
+            Map<String, String> headers = new HashMap<>();
+            String line;
+            while (!(line = in.readLine()).equals("")) {
+                String[] header = line.split(": ");
+                headers.put(header[0], header[1]);
+            }
+
+            // Update Lamport clock
+            int serverLamportTime = Integer.parseInt(headers.getOrDefault("Lamport-Time", "0"));
+            lamportClock.update(serverLamportTime);
+
+            // Read body
+            int contentLength = Integer.parseInt(headers.get("Content-Length"));
+            char[] bodyChars = new char[contentLength];
+            in.read(bodyChars);
+            String body = new String(bodyChars);
+
+            System.out.println("Server Response: " + body);
+
+            socket.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static Map<String, String> readDataFromFile(String filePath) throws IOException {
+        Map<String, String> dataMap = new HashMap<>();
+        BufferedReader reader = new BufferedReader(new FileReader(filePath));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] kv = line.split(":");
+            if (kv.length >= 2) {
+                dataMap.put(kv[0].trim(), kv[1].trim());
+            }
+        }
+        reader.close();
+        return dataMap;
+    }
+
+    private static String mapToJson(Map<String, String> map) {
+        StringBuilder json = new StringBuilder();
+        json.append("{");
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            json.append("\"").append(entry.getKey()).append("\":");
+            json.append("\"").append(entry.getValue()).append("\",");
+        }
+        if (json.charAt(json.length() - 1) == ',') {
+            json.deleteCharAt(json.length() - 1);
+        }
+        json.append("}");
+        return json.toString();
+    }
+}

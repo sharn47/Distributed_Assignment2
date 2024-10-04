@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><testrun name="com.weather.app" project="app" tests="15" started="15" failures="2" errors="0" ignored="0">
+  <testsuite name="com.weather.app.LamportClockTest" time="0.001" displayname="LamportClockTest" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.LamportClockTest]">
+    <testcase name="testClockUpdateWithSmallerValue" classname="com.weather.app.LamportClockTest" time="0.001" displayname="testClockUpdateWithSmallerValue()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.LamportClockTest]/[method:testClockUpdateWithSmallerValue()]"/>
+    <testcase name="testClockInitialValue" classname="com.weather.app.LamportClockTest" time="0.0" displayname="testClockInitialValue()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.LamportClockTest]/[method:testClockInitialValue()]"/>
+    <testcase name="testClockIncrement" classname="com.weather.app.LamportClockTest" time="0.0" displayname="testClockIncrement()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.LamportClockTest]/[method:testClockIncrement()]"/>
+    <testcase name="testClockUpdateWithHigherValue" classname="com.weather.app.LamportClockTest" time="0.0" displayname="testClockUpdateWithHigherValue()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.LamportClockTest]/[method:testClockUpdateWithHigherValue()]"/>
+  </testsuite>
+  <testsuite name="com.weather.app.AggregationServerTest" time="0.24" displayname="AggregationServerTest" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]">
+    <testcase name="testPutRequestUpdatesClock" classname="com.weather.app.AggregationServerTest" time="0.121" displayname="testPutRequestUpdatesClock()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testPutRequestUpdatesClock()]"/>
+    <testcase name="testGetRequestNoData" classname="com.weather.app.AggregationServerTest" time="0.047" displayname="testGetRequestNoData()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testGetRequestNoData()]">
+      <failure>
+        <expected>[]</expected>
+        <actual>[  {    "id": "002",    "name": "Update Test",    "state": "Test State",    "origin": "/127.0.0.1:65155",    "timestamp": 1727953270385  }]</actual>
+        org.opentest4j.AssertionFailedError: Expected an empty response body when no data is available. ==&gt; expected: &lt;[]&gt; but was: &lt;[  {    "id": "002",    "name": "Update Test",    "state": "Test State",    "origin": "/127.0.0.1:65155",    "timestamp": 1727953270385  }]&gt;&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)&#13;
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)&#13;
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)&#13;
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1156)&#13;
+	at com.weather.app.AggregationServerTest.testGetRequestNoData(AggregationServerTest.java:142)&#13;
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+&#13;
+
+      </failure>
+    </testcase>
+    <testcase name="testPutAndGetRequest" classname="com.weather.app.AggregationServerTest" time="0.02" displayname="testPutAndGetRequest()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testPutAndGetRequest()]"/>
+    <testcase name="testPutInvalidJson" classname="com.weather.app.AggregationServerTest" time="0.011" displayname="testPutInvalidJson()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testPutInvalidJson()]">
+      <failure>
+        <expected>true</expected>
+        <actual>false</actual>
+        org.opentest4j.AssertionFailedError: expected: &lt;true&gt; but was: &lt;false&gt;&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)&#13;
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)&#13;
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)&#13;
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)&#13;
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)&#13;
+	at com.weather.app.AggregationServerTest.testPutInvalidJson(AggregationServerTest.java:106)&#13;
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+&#13;
+
+      </failure>
+    </testcase>
+    <testcase name="testGetRequestWithMultipleDataEntries" classname="com.weather.app.AggregationServerTest" time="0.034" displayname="testGetRequestWithMultipleDataEntries()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testGetRequestWithMultipleDataEntries()]"/>
+  </testsuite>
+  <testsuite name="com.weather.app.WeatherDataTest" time="0.013" displayname="WeatherDataTest" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.WeatherDataTest]">
+    <testcase name="testWeatherDataCreation" classname="com.weather.app.WeatherDataTest" time="0.0" displayname="testWeatherDataCreation()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.WeatherDataTest]/[method:testWeatherDataCreation()]"/>
+    <testcase name="testWeatherDataUpdateLastUpdated" classname="com.weather.app.WeatherDataTest" time="0.012" displayname="testWeatherDataUpdateLastUpdated()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.WeatherDataTest]/[method:testWeatherDataUpdateLastUpdated()]"/>
+  </testsuite>
+  <testsuite name="com.weather.app.ContentServerTest" time="0.062" displayname="ContentServerTest" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.ContentServerTest]">
+    <testcase name="testContentServerInvalidFileFormat" classname="com.weather.app.ContentServerTest" time="0.051" displayname="testContentServerInvalidFileFormat()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.ContentServerTest]/[method:testContentServerInvalidFileFormat()]"/>
+    <testcase name="testContentServerSendData" classname="com.weather.app.ContentServerTest" time="0.01" displayname="testContentServerSendData()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.ContentServerTest]/[method:testContentServerSendData()]"/>
+  </testsuite>
+  <testsuite name="com.weather.app.GETClientTest" time="0.546" displayname="GETClientTest" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.GETClientTest]">
+    <testcase name="testGetClientReceivesData" classname="com.weather.app.GETClientTest" time="0.031" displayname="testGetClientReceivesData()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.GETClientTest]/[method:testGetClientReceivesData()]"/>
+    <testcase name="testGETClientHandlesValidServerResponse" classname="com.weather.app.GETClientTest" time="0.514" displayname="testGETClientHandlesValidServerResponse()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.GETClientTest]/[method:testGETClientHandlesValidServerResponse()]"/>
+  </testsuite>
+</testrun>

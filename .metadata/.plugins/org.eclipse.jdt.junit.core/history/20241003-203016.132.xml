@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><testrun name="AggregationServerTest" project="app" tests="5" started="5" failures="2" errors="0" ignored="0">
+  <testsuite name="com.weather.app.AggregationServerTest" time="0.108" displayname="AggregationServerTest" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]">
+    <testcase name="testPutRequestUpdatesClock" classname="com.weather.app.AggregationServerTest" time="0.023" displayname="testPutRequestUpdatesClock()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testPutRequestUpdatesClock()]"/>
+    <testcase name="testGetRequestNoData" classname="com.weather.app.AggregationServerTest" time="0.039" displayname="testGetRequestNoData()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testGetRequestNoData()]">
+      <failure>
+        <expected>[]</expected>
+        <actual>[  {    "id": "002",    "name": "Update Test",    "state": "Test State",    "origin": "/127.0.0.1:65076",    "timestamp": 1727953216203  }]</actual>
+        org.opentest4j.AssertionFailedError: Expected an empty response body when no data is available. ==&gt; expected: &lt;[]&gt; but was: &lt;[  {    "id": "002",    "name": "Update Test",    "state": "Test State",    "origin": "/127.0.0.1:65076",    "timestamp": 1727953216203  }]&gt;&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)&#13;
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)&#13;
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)&#13;
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1156)&#13;
+	at com.weather.app.AggregationServerTest.testGetRequestNoData(AggregationServerTest.java:142)&#13;
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+&#13;
+
+      </failure>
+    </testcase>
+    <testcase name="testPutAndGetRequest" classname="com.weather.app.AggregationServerTest" time="0.009" displayname="testPutAndGetRequest()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testPutAndGetRequest()]"/>
+    <testcase name="testPutInvalidJson" classname="com.weather.app.AggregationServerTest" time="0.007" displayname="testPutInvalidJson()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testPutInvalidJson()]">
+      <failure>
+        <expected>true</expected>
+        <actual>false</actual>
+        org.opentest4j.AssertionFailedError: expected: &lt;true&gt; but was: &lt;false&gt;&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)&#13;
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)&#13;
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)&#13;
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)&#13;
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)&#13;
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)&#13;
+	at com.weather.app.AggregationServerTest.testPutInvalidJson(AggregationServerTest.java:106)&#13;
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)&#13;
+&#13;
+
+      </failure>
+    </testcase>
+    <testcase name="testGetRequestWithMultipleDataEntries" classname="com.weather.app.AggregationServerTest" time="0.024" displayname="testGetRequestWithMultipleDataEntries()" uniqueid="[engine:junit-jupiter]/[class:com.weather.app.AggregationServerTest]/[method:testGetRequestWithMultipleDataEntries()]"/>
+  </testsuite>
+</testrun>

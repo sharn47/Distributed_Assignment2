@@ -1,0 +1,48 @@
+package com.weather.app;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.io.*;
+import java.net.*;
+
+import org.junit.jupiter.api.*;
+import org.mockito.ArgumentCaptor;
+
+public class GETClientTest {
+
+    @Test
+    public void testParseAndDisplay() {
+        String jsonResponse = "[{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"state\":\"SA\"}]";
+        GETClient.parseAndDisplay(jsonResponse);
+        // Since parseAndDisplay prints to console, you can redirect System.out to capture output
+        // For simplicity, we assume parseAndDisplay works if no exceptions are thrown
+    }
+
+    @Test
+    public void testSendGetRequest() throws Exception {
+        // Mock Socket and its streams
+        Socket mockSocket = mock(Socket.class);
+        OutputStream mockOut = new ByteArrayOutputStream();
+        InputStream mockIn = new ByteArrayInputStream(
+                ("HTTP/1.1 200 OK\r\nContent-Length: 58\r\nLamport-Clock: 1\r\n\r\n" +
+                "[{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"state\":\"SA\"}]").getBytes());
+
+        when(mockSocket.getOutputStream()).thenReturn(mockOut);
+        when(mockSocket.getInputStream()).thenReturn(mockIn);
+
+        // Spy on GETClient to mock the Socket creation
+        GETClient client = spy(new GETClient());
+        doReturn(mockSocket).when(client).createSocket(any(URL.class));
+
+        // Call the method under test
+        client.sendGetRequest("http://localhost:4567");
+
+        // Capture the output sent to the server
+        String sentData = mockOut.toString();
+
+        // Verify that the data contains the expected HTTP request
+        assertTrue(sentData.contains("GET / HTTP/1.1"));
+        assertTrue(sentData.contains("Lamport-Clock: 1"));
+    }
+}

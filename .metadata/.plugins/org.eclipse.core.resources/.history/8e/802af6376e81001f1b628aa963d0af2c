@@ -1,0 +1,82 @@
+package com.weather.app;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.io.*;
+import java.net.*;
+import java.nio.file.*;
+import java.util.*;
+
+import org.junit.jupiter.api.*;
+import org.mockito.ArgumentCaptor;
+
+public class ContentServerTest {
+
+    private static final String TEST_FILE_PATH = "test_weatherdata.txt";
+    private static final String TEST_SERVER_URL = "http://localhost:4567";
+
+    @BeforeEach
+    public void setup() throws IOException {
+        // Create a sample weather data file
+        String content = "id:IDS60901\n" +
+                "name:Adelaide\n" +
+                "state:SA\n" +
+                "air_temp:13.3\n";
+        Files.write(Paths.get(TEST_FILE_PATH), content.getBytes());
+    }
+
+    @AfterEach
+    public void teardown() throws IOException {
+        Files.deleteIfExists(Paths.get(TEST_FILE_PATH));
+    }
+
+    @Test
+    public void testReadDataFromFile() throws IOException {
+        Map<String, String> dataMap = ContentServer.readDataFromFile(TEST_FILE_PATH);
+        assertEquals("IDS60901", dataMap.get("id"));
+        assertEquals("Adelaide", dataMap.get("name"));
+        assertEquals("SA", dataMap.get("state"));
+        assertEquals("13.3", dataMap.get("air_temp"));
+    }
+
+    @Test
+    public void testMapToJson() throws IOException {
+        Map<String, String> dataMap = ContentServer.readDataFromFile(TEST_FILE_PATH);
+        String jsonData = ContentServer.mapToJson(dataMap);
+
+        // Parse the JSON to verify its structure
+        com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonData).getAsJsonObject();
+        assertEquals("IDS60901", jsonObject.get("id").getAsString());
+        assertEquals("Adelaide", jsonObject.get("name").getAsString());
+    }
+
+    @Test
+    public void testSendPutRequest() throws Exception {
+        // Mock Socket and its streams
+        Socket mockSocket = mock(Socket.class);
+        OutputStream mockOut = new ByteArrayOutputStream();
+        InputStream mockIn = new ByteArrayInputStream("HTTP/1.1 200 OK\r\nLamport-Clock: 1\r\n\r\n".getBytes());
+
+        when(mockSocket.getOutputStream()).thenReturn(mockOut);
+        when(mockSocket.getInputStream()).thenReturn(mockIn);
+
+        // Spy on ContentServer to mock the Socket creation
+        ContentServer contentServer = spy(new ContentServer());
+        doReturn(mockSocket).when(contentServer).createSocket(any(URL.class));
+
+        // Call the method under test
+        contentServer.sendData(TEST_SERVER_URL, TEST_FILE_PATH);
+
+        // Capture the output sent to the server
+        String sentData = mockOut.toString();
+
+        // Verify that the data contains the expected HTTP request
+        assertTrue(sentData.contains("PUT / HTTP/1.1"));
+        assertTrue(sentData.contains("Content-Type: application/json"));
+        assertTrue(sentData.contains("Lamport-Clock: 1"));
+
+        // Verify that the JSON data is included
+        assertTrue(sentData.contains("\"id\":\"IDS60901\""));
+        assertTrue(sentData.contains("\"name\":\"Adelaide\""));
+    }
+}

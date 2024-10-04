@@ -1,0 +1,63 @@
+package com.weather.app;
+
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
+
+public class AggregationServerTest {
+
+    private AggregationServer server;
+
+    @BeforeEach
+    public void setUp() {
+        server = new AggregationServer(8080);
+    }
+
+    @Test
+    public void testLamportClockInitialization() {
+        assertEquals(0, server.getLamportClock(), "Lamport clock should start at 0");
+    }
+
+    @Test
+    public void testLamportClockUpdate() {
+        int newClock = server.updateLamportClock(5);
+        assertEquals(6, newClock, "Lamport clock should be max(current, received) + 1");
+        assertEquals(6, server.getLamportClock(), "Lamport clock should be updated");
+    }
+
+    @Test
+    public void testWeatherDataStorage() {
+        ConcurrentHashMap<String, WeatherStationData> map = server.getWeatherDataMap();
+        assertNotNull(map, "Weather data map should not be null");
+        assertTrue(map.isEmpty(), "Weather data map should be initially empty");
+    }
+
+    @Test
+    public void testDataExpiration() throws InterruptedException {
+        // Add a dummy data entry
+        WeatherStationData data = new WeatherStationData();
+        data.setLastUpdateTime(System.currentTimeMillis());
+        server.getWeatherDataMap().put("station1", data);
+
+        // Wait for 31 seconds
+        Thread.sleep(31000);
+
+        // The data should have been expired
+        assertFalse(server.getWeatherDataMap().containsKey("station1"), "Data should be expired and removed");
+    }
+
+    @Test
+    public void testHandlePutRequest() {
+        // Mock a PUT request (You may need to adjust this based on your implementation)
+        // Since the AggregationServer uses sockets directly, refactoring might be necessary
+        // to make the code more testable (e.g., extracting request handling logic into separate methods)
+    }
+
+    @Test
+    public void testHandleGetRequest() {
+        // Similar to the PUT test, you may need to refactor the code to make it testable
+    }
+}
+

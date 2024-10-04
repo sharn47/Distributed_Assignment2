@@ -1,0 +1,44 @@
+package com.weather.app;
+
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import java.io.*;
+import java.net.*;
+
+public class GETClientTest {
+
+    private static ByteArrayOutputStream outContent;
+
+    @BeforeEach
+    public void setUpStreams() {
+        outContent = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outContent));
+    }
+
+    @AfterEach
+    public void restoreStreams() {
+        System.setOut(System.out);
+    }
+
+    @Test
+    public void testGETClientReceiveData() throws Exception {
+        // Start GETClient in a separate thread
+        Thread getClientThread = new Thread(() -> {
+            try {
+                GETClient.main(new String[]{"http://localhost:8080"});
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        getClientThread.start();
+
+        // Wait for GETClient to finish
+        getClientThread.join();
+
+        // Check the output
+        String output = outContent.toString();
+        assertTrue(output.contains("id: testStation"));
+        assertTrue(output.contains("temp: 25"));
+        assertTrue(output.contains("humidity: 50"));
+    }
+}

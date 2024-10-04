@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "id": "002",
+    "name": "Update Test",
+    "state": "Test State",
+    "origin": "/127.0.0.1:50091",
+    "timestamp": 1727954058633
+  },
+  {
+    "id": "001",
+    "name": "Test Station",
+    "state": "Test State",
+    "origin": "/127.0.0.1:50093",
+    "timestamp": 1727954058716
+  },
+  {
+    "id": "003",
+    "name": "Station 1",
+    "state": "State 1",
+    "origin": "/127.0.0.1:50096",
+    "timestamp": 1727954058728
+  },
+  {
+    "id": "004",
+    "name": "Station 2",
+    "state": "State 2",
+    "origin": "/127.0.0.1:50097",
+    "timestamp": 1727954058737
+  }
+]

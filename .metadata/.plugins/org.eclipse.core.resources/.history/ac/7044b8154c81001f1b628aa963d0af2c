@@ -1,0 +1,171 @@
+package com.weather.app;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class AggregationServer {
+    private static final int PORT = 8080;
+    private static final int DATA_EXPIRY = 30000; // 30 seconds
+    private static Map<String, WeatherData> weatherDataMap = new ConcurrentHashMap<>();
+    private static LamportClock lamportClock = new LamportClock();
+
+    public static void main(String[] args) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(PORT);
+        System.out.println("Aggregation Server is running on port " + PORT);
+
+        // Start the data expiry thread
+        new Thread(new DataExpiryTask()).start();
+
+        while (true) {
+            Socket clientSocket = serverSocket.accept();
+            new Thread(new ClientHandler(clientSocket)).start();
+        }
+    }
+
+    // ClientHandler class
+    static class ClientHandler implements Runnable {
+        private Socket socket;
+
+        public ClientHandler(Socket socket) {
+            this.socket = socket;
+        }
+
+        public void run() {
+            try (BufferedReader in = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream()));
+                 BufferedWriter out = new BufferedWriter(
+                         new OutputStreamWriter(socket.getOutputStream()))) {
+
+                // Read the request line
+                String requestLine = in.readLine();
+                if (requestLine == null) return;
+
+                // Read headers
+                Map<String, String> headers = new HashMap<>();
+                String line;
+                while (!(line = in.readLine()).equals("")) {
+                    String[] header = line.split(": ");
+                    headers.put(header[0], header[1]);
+                }
+
+                // Handle Lamport clock
+                int clientLamportTime = Integer.parseInt(headers.getOrDefault("Lamport-Time", "0"));
+                lamportClock.update(clientLamportTime);
+
+                if (requestLine.startsWith("PUT")) {
+                    handlePutRequest(in, out, headers);
+                } else if (requestLine.startsWith("GET")) {
+                    handleGetRequest(out, headers);
+                } else {
+                    sendResponse(out, "400 Bad Request", "Unsupported method.");
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void handlePutRequest(BufferedReader in, BufferedWriter out, Map<String, String> headers) throws IOException {
+            lamportClock.tick();
+            // Read content length
+            int contentLength = Integer.parseInt(headers.get("Content-Length"));
+            char[] bodyChars = new char[contentLength];
+            in.read(bodyChars);
+            String body = new String(bodyChars);
+
+            // Parse JSON data
+            Map<String, String> data = parseJson(body);
+            String contentServerId = data.get("id");
+
+            // Update weather data
+            WeatherData weatherData = new WeatherData(data, lamportClock.getTime());
+            weatherDataMap.put(contentServerId, weatherData);
+
+            // Send response
+            sendResponse(out, "200 OK", "Data received.");
+        }
+
+        private void handleGetRequest(BufferedWriter out, Map<String, String> headers) throws IOException {
+            lamportClock.tick();
+            // Assemble JSON response
+            StringBuilder jsonResponse = new StringBuilder();
+            jsonResponse.append("{ \"weatherData\": [");
+            int count = 0;
+            for (WeatherData wd : weatherDataMap.values()) {
+                if (count >= 20) break;
+                jsonResponse.append(mapToJson(wd.getData())).append(",");
+                count++;
+            }
+            if (jsonResponse.charAt(jsonResponse.length() - 1) == ',') {
+                jsonResponse.deleteCharAt(jsonResponse.length() - 1);
+            }
+            jsonResponse.append("] }");
+
+            // Send response
+            sendResponse(out, "200 OK", jsonResponse.toString(), "application/json");
+        }
+
+        private Map<String, String> parseJson(String jsonString) {
+            Map<String, String> dataMap = new HashMap<>();
+            jsonString = jsonString.trim().substring(1, jsonString.length() - 1); // Remove { }
+            String[] pairs = jsonString.split(",");
+            for (String pair : pairs) {
+                String[] kv = pair.split(":");
+                String key = kv[0].trim().replace("\"", "");
+                String value = kv[1].trim().replace("\"", "");
+                dataMap.put(key, value);
+            }
+            return dataMap;
+        }
+
+        private String mapToJson(Map<String, String> map) {
+            StringBuilder json = new StringBuilder();
+            json.append("{");
+            for (Map.Entry<String, String> entry : map.entrySet()) {
+                json.append("\"").append(entry.getKey()).append("\":");
+                json.append("\"").append(entry.getValue()).append("\",");
+            }
+            if (json.charAt(json.length() - 1) == ',') {
+                json.deleteCharAt(json.length() - 1);
+            }
+            json.append("}");
+            return json.toString();
+        }
+
+        private void sendResponse(BufferedWriter out, String status, String body) throws IOException {
+            sendResponse(out, status, body, "text/plain");
+        }
+
+        private void sendResponse(BufferedWriter out, String status, String body, String contentType) throws IOException {
+            out.write("HTTP/1.1 " + status + "\r\n");
+            out.write("Content-Type: " + contentType + "\r\n");
+            out.write("Content-Length: " + body.length() + "\r\n");
+            out.write("Lamport-Time: " + lamportClock.getTime() + "\r\n");
+            out.write("\r\n");
+            out.write(body);
+            out.flush();
+        }
+    }
+
+    // DataExpiryTask class
+    static class DataExpiryTask implements Runnable {
+        public void run() {
+            while (true) {
+                try {
+                    Thread.sleep(5000); // Check every 5 seconds
+                    long currentTime = System.currentTimeMillis();
+                    for (Iterator<Map.Entry<String, WeatherData>> it = weatherDataMap.entrySet().iterator(); it.hasNext();) {
+                        Map.Entry<String, WeatherData> entry = it.next();
+                        if (currentTime - entry.getValue().getLastUpdated() > DATA_EXPIRY) {
+                            it.remove();
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}

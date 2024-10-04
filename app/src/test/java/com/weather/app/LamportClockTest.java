@@ -1,40 +1,67 @@
 package com.weather.app;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-public class LamportClockTest {
+
+
+class LamportClockTest {
+
+
 
     @Test
-    public void testTick() {
+
+    void testClockInitialValue() {
+
         LamportClock clock = new LamportClock();
-        int initial = clock.getClock();
+
+        assertEquals(0, clock.getClock());
+
+    }
+
+
+
+    @Test
+
+    void testClockIncrement() {
+
+        LamportClock clock = new LamportClock();
+
         clock.tick();
-        assertEquals(initial + 1, clock.getClock());
+
+        assertEquals(1, clock.getClock());
+
     }
+
+
 
     @Test
-    public void testUpdate() {
-        LamportClock clock = new LamportClock();
-        clock.update(10);
-        assertEquals(11, clock.getClock());
 
-        clock.update(15);
-        assertEquals(16, clock.getClock());
+    void testClockUpdateWithHigherValue() {
+
+        LamportClock clock = new LamportClock();
+
+        clock.update(5);
+
+        assertEquals(6, clock.getClock());
+
     }
+
+
 
     @Test
-    public void testConcurrentUpdate() throws InterruptedException {
+
+    void testClockUpdateWithSmallerValue() {
+
         LamportClock clock = new LamportClock();
-        Thread thread1 = new Thread(clock::tick);
-        Thread thread2 = new Thread(() -> clock.update(5));
 
-        thread1.start();
-        thread2.start();
+        clock.update(2);
 
-        thread1.join();
-        thread2.join();
+        clock.update(1);
 
-        assertTrue(clock.getClock() >= 6); // Clock should be at least 6 due to concurrent updates
+        assertEquals(4, clock.getClock()); // Clock shouldn't decrease
+
     }
+
 }

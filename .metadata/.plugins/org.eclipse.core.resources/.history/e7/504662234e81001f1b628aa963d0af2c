@@ -1,0 +1,83 @@
+package com.weather.app;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import java.io.*;
+import java.net.*;
+import java.nio.file.*;
+
+public class ContentServerTest {
+
+    private static final String TEST_FILE_PATH = "test_weather_data.txt";
+    private static final String SERVER_URL = "http://localhost:8080";
+
+    @BeforeEach
+    public void createTestFile() throws IOException {
+        String testData = "id:testStation\n" +
+                          "temp:25\n" +
+                          "humidity:50";
+        Files.write(Paths.get(TEST_FILE_PATH), testData.getBytes());
+    }
+
+    @AfterEach
+    public void deleteTestFile() throws IOException {
+        Files.deleteIfExists(Paths.get(TEST_FILE_PATH));
+    }
+
+    @Test
+    public void testContentServerSendData() throws Exception {
+        // Start ContentServer in a separate thread
+        Thread contentServerThread = new Thread(() -> {
+            try {
+                ContentServer.main(new String[]{SERVER_URL, TEST_FILE_PATH});
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        contentServerThread.start();
+
+        // Wait for ContentServer to send data
+        contentServerThread.join();
+
+        // Now, check that the data has been received by the AggregationServer
+        // We can reuse the GET request from AggregationServerTest
+
+        // Since the server is already running, we can send a GET request
+        Socket socket = new Socket("localhost", 8080);
+        BufferedWriter out = new BufferedWriter(
+                new OutputStreamWriter(socket.getOutputStream()));
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(socket.getInputStream()));
+
+        // Send GET request
+        out.write("GET /weather HTTP/1.1\r\n");
+        out.write("Host: localhost\r\n");
+        out.write("Lamport-Time: 1\r\n");
+        out.write("\r\n");
+        out.flush();
+
+        // Read response
+        String statusLine = in.readLine();
+        assertEquals("HTTP/1.1 200 OK", statusLine);
+
+        // Read headers
+        String line;
+        int contentLength = 0;
+        while (!(line = in.readLine()).equals("")) {
+            if (line.startsWith("Content-Length: ")) {
+                contentLength = Integer.parseInt(line.substring(16));
+            }
+        }
+
+        // Read body
+        char[] bodyChars = new char[contentLength];
+        in.read(bodyChars);
+        String body = new String(bodyChars);
+
+        // Assert that the data is present
+        assertTrue(body.contains("\"id\":\"testStation\""));
+        assertTrue(body.contains("\"temp\":\"25\""));
+        assertTrue(body.contains("\"humidity\":\"50\""));
+
+        socket.close();
+    }
+}
