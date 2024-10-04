@@ -88,3 +88,66 @@ Maintains a Lamport clock (lamportClock) to synchronize events in a distributed 
 Increments the clock before sending the request.
 Includes the Lamport clock value in the request headers (Lamport-Clock).
 Updates the local Lamport clock based on the maximum value between the local and the server's Lamport clock received in the response headers.
+
+
+# Running the Project using Command Line
+
+Directory Structure :: 
+src/main/com/weather/app/
+
+## Building the Project
+1.	Navigate to the root directory of the project.
+2.	Compile the Java files:
+
+`javac -d bin src/main/com/weather/app/*.java`
+
+## Running the Servers and Clients
+1. Start the Aggregation Server
+- Open a terminal and run the following command to start the Aggregation Server:
+
+`java -cp bin com.weather.app.AggregationServer <server-address:port>`
+
+Usage:
+`java -cp bin com.weather.app.AggregationServer`
+
+2. Start the Content Server
+- In a new terminal, run the following command to start the Content Server. Replace <server-address:port> with the address and port of the Aggregation Server, and provide the path to the weather data file.
+
+`java -cp bin com.weather.app.ContentServer <server-address:port> <file-path>`
+
+Usage:
+`java -cp bin com.weather.app.ContentServer localhost:4567 txt.txt`
+
+3. Run the GET Client
+- In another terminal, run the GET Client with the server address and port. Optionally, you can specify a station ID.
+
+`java -cp bin com.weather.app.GETClient <server-address:port> [station-id]`
+
+Usage:
+`java -cp bin com.weather.app.GETClient localhost:4567`
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+# Running the Project in Eclipse
+## Prerequisites
+Before running the project, ensure that the following requirements are met:
+-•	Java Development Kit (JDK) installed on your machine.
+-•	JSON library (e.g., Gson) placed in a lib/ folder within your project directory.
+
+## Importing the Project in Eclipse
+To import the project into Eclipse:
+1.	Open Eclipse.
+2.	Select File > Import.
+3.	Choose Existing Projects into Workspace and click Next.
+4.	Browse to the location of your project directory and select it.
+5.	Click Finish to import the project into the workspace.
+Compiling and Running the Programs
+
+## Aggregation Server
+1. Open the AggregationServer.java file in Eclipse.
+2. Right-click on the file in the Package Explorer.
+3. Select Run As > Java Application.
+4. The default port for the Aggregation Server is set to 4567. If needed, you can modify this by passing a different port number in the Run Configurations:
+-   Click on Run > Run Configurations....
+-   Select Java Application for your AggregationServer.
+-   If required, in the Arguments tab, provide the port number (e.g., 4567).
+-   Click Apply and then Run.
